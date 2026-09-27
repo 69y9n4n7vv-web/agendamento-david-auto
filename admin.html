@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrador — David Auto Brilho</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        body { background: #0e0e0e; color: #fff; padding: 30px 15px; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid #222; padding-bottom: 15px; }
+        h1 { color: #ffd700; font-size: 22px; text-transform: uppercase; }
+        .btn-logout { color: #ff4d4d; text-decoration: none; font-weight: 600; }
+        .filter-bar { background: #161616; padding: 15px 20px; border-radius: 10px; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #222; }
+        .filter-bar form { display: flex; gap: 10px; align-items: center; }
+        .filter-bar input[type="date"] { background: #222; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px; }
+        .btn-filter { background: #ffd700; color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 700; cursor: pointer; }
+        .btn-clear { color: #aaa; text-decoration: none; font-size: 13px; }
+        table { width: 100%; border-collapse: collapse; background: #141414; border-radius: 10px; overflow: hidden; }
+        th, td { padding: 14px 18px; text-align: left; border-bottom: 1px solid #222; font-size: 14px; }
+        th { background: #1c1c1c; color: #ffd700; font-weight: 600; text-transform: uppercase; font-size: 12px; }
+        .status-tag { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .status-PENDENTE { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+        .status-CONCLUIDO { background: rgba(40, 167, 69, 0.2); color: #28a745; }
+        .status-CANCELADO { background: rgba(220, 53, 69, 0.2); color: #dc3545; }
+        .actions { display: flex; gap: 8px; }
+        .btn-action { border: none; padding: 6px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; color: #fff; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+        .btn-success { background: #28a745; }
+        .btn-danger { background: #dc3545; }
+        .btn-wsp { background: #25d366; color: #fff; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1><i class="fa-solid fa-car-wash"></i> Painel David Auto Brilho</h1>
+        <a href="/logout" class="btn-logout"><i class="fa-solid fa-right-from-bracket"></i> Sair</a>
+    </div>
+
+    <div class="filter-bar">
+        <form action="/admin" method="get">
+            <label><i class="fa-solid fa-filter"></i> Filtrar por Data:</label>
+            <input type="date" name="dataFiltro" th:value="${dataFiltro}">
+            <button type="submit" class="btn-filter">Buscar</button>
+            <a href="/admin" class="btn-clear" th:if="${dataFiltro}">Limpar Filtro</a>
+        </form>
+    </div>
+
+    <table>
+        <thead>
+        <tr>
+            <th>Cliente</th>
+            <th>Telefone</th>
+            <th>Veículo / Serviço</th>
+            <th>Data & Hora</th>
+            <th>Valor</th>
+            <th>Status</th>
+            <th>Ações</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="a : ${agendamentos}">
+            <td th:text="${a.nomeCliente}" style="font-weight: 600;">João</td>
+            <td th:text="${a.telefone}">(79) 99999-9999</td>
+            <td th:text="${a.tipoVeiculo + ' — ' + a.servico}">Carro — Completa</td>
+            <td th:text="${#temporals.format(a.dataHora, 'dd/MM/yyyy HH:mm')}">28/09 10:00</td>
+            <td th:text="${'R$ ' + #numbers.formatDecimal(a.valor, 1, 2)}" style="color: #ffd700; font-weight: 700;">R$ 60,00</td>
+            <td>
+                <span th:class="'status-tag status-' + ${a.status}" th:text="${a.status}">PENDENTE</span>
+            </td>
+            <td class="actions">
+                <a th:href="'https://wa.me/55' + ${#strings.replace(#strings.replace(#strings.replace(a.telefone, '(', ''), ')', ''), ' ', '')} + '?text=Olá%20' + ${a.nomeCliente} + '!%20Seu%20' + ${a.tipoVeiculo} + '%20está%20pronto%20aqui%20no%20David%20Auto%20Brilho!'"
+                   target="_blank" class="btn-action btn-wsp" title="Avisar no WhatsApp">
+                    <i class="fa-brands fa-whatsapp"></i>
+                </a>
+
+                <form th:action="@{'/admin/status/' + ${a.id}}" method="post" style="display:inline;" th:if="${a.status != 'CONCLUIDO'}">
+                    <input type="hidden" name="novoStatus" value="CONCLUIDO">
+                    <button type="submit" class="btn-action btn-success" title="Marcar como Concluído"><i class="fa-solid fa-check"></i></button>
+                </form>
+
+                <form th:action="@{'/admin/status/' + ${a.id}}" method="post" style="display:inline;" th:if="${a.status != 'CANCELADO'}">
+                    <input type="hidden" name="novoStatus" value="CANCELADO">
+                    <button type="submit" class="btn-action btn-danger" title="Cancelar Agendamento"><i class="fa-solid fa-xmark"></i></button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+</body>
+</html>
